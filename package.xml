@@ -64,6 +64,8 @@
   <exec_depend>image_transport</exec_depend>
   <exec_depend>roscpp</exec_depend>
   <exec_depend>tf2</exec_depend>
+  
+  <depend>rmi_driver</depend>
 
 
   <!-- The export tag contains other, unspecified, tags -->
