@@ -108,5 +108,12 @@ void Artiste::imageCb(const sensor_msgs::ImageConstPtr &image_msg)
 
   auto path = path_creator_.createPath(contours_poly, tf_camera, image_msg->height, image_msg->width);
   pub_path_.publish(path);
+
+  if (start_move_)
+  {
+    start_move_ = false;
+    auto cmd_list = path_executor_.createCmdList(path);
+    pub_rmi_.publish(cmd_list);
+  }
 }
 } /* namespace artiste */

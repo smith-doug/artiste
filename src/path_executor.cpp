@@ -41,4 +41,38 @@ PathExecutor::~PathExecutor()
   // TODO Auto-generated destructor stub
 }
 
+robot_movement_interface::CommandList PathExecutor::createCmdList(const nav_msgs::Path &path)
+{
+  robot_movement_interface::CommandList cmd_list;
+  for (auto &&pt : path.poses)
+  {
+    cmd_list.commands.emplace_back(poseToRmiCommand(pt));
+  }
+
+  cmd_list.commands[0].command_type = "PTP";
+
+  return cmd_list;
+}
+
+robot_movement_interface::Command PathExecutor::poseToRmiCommand(const geometry_msgs::PoseStamped &pt)
+{
+  robot_movement_interface::Command cmd;
+  cmd.header.frame_id = "base_link";
+  cmd.command_type = "LIN";
+  cmd.pose_type = "QUATERNION";
+  cmd.pose.push_back(pt.pose.position.x);
+  cmd.pose.push_back(pt.pose.position.y);
+  cmd.pose.push_back(pt.pose.position.z);
+  cmd.pose.push_back(pt.pose.orientation.w);
+  cmd.pose.push_back(pt.pose.orientation.x);
+  cmd.pose.push_back(pt.pose.orientation.y);
+  cmd.pose.push_back(pt.pose.orientation.z);
+
+  cmd.velocity_type = "%";
+  cmd.velocity.push_back(100);
+  cmd.blending.push_back(1);
+
+  return cmd;
+}
+
 } /* namespace artiste */

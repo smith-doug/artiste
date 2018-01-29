@@ -30,6 +30,10 @@
 #ifndef INCLUDE_ARTISTE_PATH_EXECUTOR_H_
 #define INCLUDE_ARTISTE_PATH_EXECUTOR_H_
 
+#include <geometry_msgs/PoseStamped.h>
+#include <nav_msgs/Path.h>
+#include <robot_movement_interface/CommandList.h>
+
 namespace artiste
 {
 class PathExecutor
@@ -37,6 +41,10 @@ class PathExecutor
 public:
   PathExecutor();
   virtual ~PathExecutor();
+
+  robot_movement_interface::CommandList createCmdList(const nav_msgs::Path &path);
+
+  virtual robot_movement_interface::Command poseToRmiCommand(const geometry_msgs::PoseStamped &pt);
 };
 
 } /* namespace artiste */
