@@ -35,16 +35,14 @@
 
 namespace artiste
 {
-PathCreator::PathCreator() : max_x_(0.18), max_y_(0.18), source_frame_(""), dest_frame_(""), logger_("PathCreator", "")
+PathCreator::PathCreator() : max_x_(0.18), max_y_(0.18), logger_("PathCreator", "")
 {
 }
 
-void PathCreator::init(double max_x, double max_y, std::string source_frame, std::string dest_frame)
+void PathCreator::init(double max_x, double max_y)
 {
   max_x_ = max_x;
   max_y_ = max_y;
-  source_frame_ = source_frame;
-  dest_frame_ = dest_frame;
 }
 
 PathCreator::~PathCreator()
@@ -55,7 +53,10 @@ nav_msgs::Path PathCreator::createPath(const ContourVec &contours, const geometr
                                        double image_height, double image_width)
 {
   nav_msgs::Path path;
-  path.header.frame_id = dest_frame_;
+
+  path.header.frame_id = tf.header.frame_id;
+
+  auto child_frame = tf.child_frame_id;
 
   double x_scale = max_x_ / image_width;
   double y_scale = max_y_ / image_height;
@@ -65,7 +66,7 @@ nav_msgs::Path PathCreator::createPath(const ContourVec &contours, const geometr
     auto start_point = cont.front();
     auto end_point = cont.back();
 
-    auto temp_pose = pointToPoseScaled(start_point, x_scale, y_scale);
+    auto temp_pose = pointToPoseScaled(start_point, child_frame, x_scale, y_scale);
 
     auto start_pose = temp_pose;  // Save a copy to go back at end
     temp_pose.pose.position.z = 0.01;
@@ -73,7 +74,7 @@ nav_msgs::Path PathCreator::createPath(const ContourVec &contours, const geometr
 
     for (auto &pt : cont)
     {
-      temp_pose = pointToPoseScaled(pt, x_scale, y_scale);
+      temp_pose = pointToPoseScaled(pt, child_frame, x_scale, y_scale);
       addPose(path, tf, temp_pose);
     }
 
@@ -87,10 +88,11 @@ nav_msgs::Path PathCreator::createPath(const ContourVec &contours, const geometr
   return path;
 }
 
-geometry_msgs::PoseStamped PathCreator::pointToPoseScaled(const cv::Point &pt, double x_scale, double y_scale)
+geometry_msgs::PoseStamped PathCreator::pointToPoseScaled(const cv::Point &pt, const std::string &frame_id,
+                                                          double x_scale, double y_scale)
 {
   geometry_msgs::PoseStamped temp_pose;
-  temp_pose.header.frame_id = source_frame_;
+  temp_pose.header.frame_id = frame_id;
   temp_pose.pose.position.x = pt.x * x_scale;
   temp_pose.pose.position.y = pt.y * y_scale;
   temp_pose.pose.position.z = 0.0;

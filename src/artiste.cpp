@@ -40,7 +40,7 @@ Artiste::Artiste(const ros::NodeHandle &nh) : nh_(nh), logger_("artiste", "/"), 
   start_move_ = false;
   source_frame_ = "camera_frame";
   target_frame_ = "world";
-  path_creator_.init(0.18, 0.18, "camera_frame", "world");
+  path_creator_.init(0.18, 0.18);
 
   pub_path_image_ = it_.advertise("image_out", 1);
   pub_path_ = nh_.advertise<nav_msgs::Path>("/image_pub/path", 1);

@@ -46,20 +46,19 @@ public:
   PathCreator();
   virtual ~PathCreator();
 
-  void init(double max_x, double max_y, std::string source_frame, std::string dest_frame);
+  void init(double max_x, double max_y);
 
   nav_msgs::Path createPath(const ContourVec &contours, const geometry_msgs::TransformStamped &tf, double image_height,
                             double image_width);
 
-  geometry_msgs::PoseStamped pointToPoseScaled(const cv::Point &pt, double x_scale, double y_scale);
+  geometry_msgs::PoseStamped pointToPoseScaled(const cv::Point &pt, const std::string &frame_id, double x_scale,
+                                               double y_scale);
 
   void addPose(nav_msgs::Path &path, const geometry_msgs::TransformStamped &tf, const geometry_msgs::PoseStamped &pose);
 
 protected:
   double max_x_;
   double max_y_;
-  std::string source_frame_;
-  std::string dest_frame_;
 
   rmi_driver::rmi_log::RmiLogger logger_;
 };
