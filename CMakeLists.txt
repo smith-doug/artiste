@@ -13,7 +13,9 @@ find_package(catkin REQUIRED COMPONENTS
   image_transport
   roscpp
   tf2
-  rmi_driver
+  tf2_ros
+  tf2_geometry_msgs
+  rmi_driver  
 )
 
 ## System dependencies are found with CMake's conventions
@@ -108,7 +110,7 @@ find_package(Boost REQUIRED COMPONENTS system thread)
 catkin_package(
    INCLUDE_DIRS include
    LIBRARIES artiste
-   CATKIN_DEPENDS cv_bridge image_geometry image_transport roscpp tf2 rmi_driver
+   CATKIN_DEPENDS cv_bridge image_geometry image_transport roscpp tf2 tf2_ros rmi_driver 
 #  DEPENDS system_lib
 )
 

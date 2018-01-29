@@ -77,6 +77,9 @@ protected:
 
   bool start_move_;
 
+  std::string source_frame_;
+  std::string target_frame_;
+
   rmi_driver::rmi_log::RmiLogger logger_;
 };
 

@@ -35,8 +35,12 @@
 namespace artiste
 {
 Artiste::Artiste(const ros::NodeHandle &nh) : nh_(nh), logger_("artiste", "/"), it_(nh), tf_listener_(tf_buffer_)
+
 {
   start_move_ = false;
+  source_frame_ = "camera_frame";
+  target_frame_ = "world";
+  path_creator_.init(0.18, 0.18, "camera_frame", "world");
 
   pub_path_image_ = it_.advertise("image_out", 1);
   pub_path_ = nh_.advertise<nav_msgs::Path>("/image_pub/path", 1);
@@ -50,6 +54,7 @@ Artiste::~Artiste()
 
 void Artiste::start()
 {
+  ros::Duration(1.5).sleep();
   std::string image_topic = nh_.resolveName("/image_pub/image_raw");
   sub_image_ = it_.subscribe(image_topic, 1, &Artiste::imageCb, this);
   sub_start_move_ = nh_.subscribe("start_cart_move", 1, &Artiste::startCartMoveCb, this);
@@ -63,10 +68,20 @@ void Artiste::startCartMoveCb(const std_msgs::Empty::ConstPtr &msg)
 
 void Artiste::imageCb(const sensor_msgs::ImageConstPtr &image_msg)
 {
-  logger_.INFO() << "Image received";
+  static bool first_time = true;
+  if (first_time)
+  {
+    logger_.INFO() << "Image received";
+    first_time = false;
+  }
 
+  // Create and flip the images so they are the right way up after making the paths.  I could probably just use the
+  // transform to rotate them but this works well.
   auto image = this->image_analyzer_.newImageFromMsg(image_msg, false);
+  image_analyzer_.flipImage(image);
+
   auto image_color = this->image_analyzer_.newImageFromMsg(image_msg, true);
+  image_analyzer_.flipImage(image_color);
 
   struct contour_sorter  // 'less' for contours
   {
@@ -82,12 +97,16 @@ void Artiste::imageCb(const sensor_msgs::ImageConstPtr &image_msg)
 
   auto contours = image_analyzer_.findContours(image);
   image_analyzer_.sortContours(contours, contour_sorter());
-  auto contours_poly = image_analyzer_.approxContours(contours);
 
+  auto contours_poly = image_analyzer_.approxContours(contours);
   image_analyzer_.drawContours(image_color, contours_poly);
 
-  // image_analyzer_.flipImage(image_color);
-
+  image_analyzer_.flipImage(image_color);
   pub_path_image_.publish(image_color->toImageMsg());
+
+  auto tf_camera = tf_buffer_.lookupTransform(target_frame_, source_frame_, ros::Time(0));
+
+  auto path = path_creator_.createPath(contours_poly, tf_camera, image_msg->height, image_msg->width);
+  pub_path_.publish(path);
 }
 } /* namespace artiste */

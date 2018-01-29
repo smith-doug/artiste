@@ -66,6 +66,9 @@
   <exec_depend>tf2</exec_depend>
   
   <depend>rmi_driver</depend>
+  <depend>tf2_ros</depend>
+  <depend>tf2_geometry_msgs</depend>
+  
 
 
   <!-- The export tag contains other, unspecified, tags -->

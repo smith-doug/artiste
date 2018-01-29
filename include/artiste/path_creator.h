@@ -30,13 +30,38 @@
 #ifndef INCLUDE_ARTISTE_PATH_CREATOR_H_
 #define INCLUDE_ARTISTE_PATH_CREATOR_H_
 
+#include <cv_bridge/cv_bridge.h>
+#include <geometry_msgs/TransformStamped.h>
+#include <nav_msgs/Path.h>
+#include <robot_movement_interface/CommandList.h>
+
+#include <rmi_driver/rmi_logger.h>
+
 namespace artiste
 {
+using ContourVec = std::vector<std::vector<cv::Point>>;
 class PathCreator
 {
 public:
   PathCreator();
   virtual ~PathCreator();
+
+  void init(double max_x, double max_y, std::string source_frame, std::string dest_frame);
+
+  nav_msgs::Path createPath(const ContourVec &contours, const geometry_msgs::TransformStamped &tf, double image_height,
+                            double image_width);
+
+  geometry_msgs::PoseStamped pointToPoseScaled(const cv::Point &pt, double x_scale, double y_scale);
+
+  void addPose(nav_msgs::Path &path, const geometry_msgs::TransformStamped &tf, const geometry_msgs::PoseStamped &pose);
+
+protected:
+  double max_x_;
+  double max_y_;
+  std::string source_frame_;
+  std::string dest_frame_;
+
+  rmi_driver::rmi_log::RmiLogger logger_;
 };
 
 } /* namespace artiste */
