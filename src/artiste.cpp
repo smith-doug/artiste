@@ -36,9 +36,10 @@ namespace artiste
 {
 Artiste::Artiste(const ros::NodeHandle &nh) : nh_(nh), logger_("artiste", "/"), it_(nh), tf_listener_(tf_buffer_)
 {
+  start_move_ = false;
+
   pub_path_image_ = it_.advertise("image_out", 1);
   pub_path_ = nh_.advertise<nav_msgs::Path>("/image_pub/path", 1);
-  // start_move_sub_ = nh_.subscribe("start_cart_move", 1, &FrameDrawer::startCartMoveCb, this);
 
   pub_rmi_ = nh_.advertise<robot_movement_interface::CommandList>("command_list", 1);
 }
@@ -51,10 +52,42 @@ void Artiste::start()
 {
   std::string image_topic = nh_.resolveName("/image_pub/image_raw");
   sub_image_ = it_.subscribe(image_topic, 1, &Artiste::imageCb, this);
+  sub_start_move_ = nh_.subscribe("start_cart_move", 1, &Artiste::startCartMoveCb, this);
+}
+
+void Artiste::startCartMoveCb(const std_msgs::Empty::ConstPtr &msg)
+{
+  start_move_ = true;
+  logger_.INFO() << "Starting a cart move";
 }
 
 void Artiste::imageCb(const sensor_msgs::ImageConstPtr &image_msg)
 {
   logger_.INFO() << "Image received";
+
+  auto image = this->image_analyzer_.newImageFromMsg(image_msg, false);
+  auto image_color = this->image_analyzer_.newImageFromMsg(image_msg, true);
+
+  struct contour_sorter  // 'less' for contours
+  {
+    bool operator()(const std::vector<cv::Point> &a, const std::vector<cv::Point> &b)
+    {
+      auto &ra = a[0];
+      auto &rb = b[0];
+      // scale factor for y should be larger than img.width
+      // return ((ra.y + 1.5 * ra.x) < (rb.y + 1.5 * rb.x));
+      return (ra.y * 10 + ra.x) < (rb.y * 10 + rb.x);
+    }
+  };
+
+  auto contours = image_analyzer_.findContours(image);
+  image_analyzer_.sortContours(contours, contour_sorter());
+  auto contours_poly = image_analyzer_.approxContours(contours);
+
+  image_analyzer_.drawContours(image_color, contours_poly);
+
+  // image_analyzer_.flipImage(image_color);
+
+  pub_path_image_.publish(image_color->toImageMsg());
 }
 } /* namespace artiste */

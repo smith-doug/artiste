@@ -53,6 +53,8 @@ public:
 
   void imageCb(const sensor_msgs::ImageConstPtr &image_msg);
 
+  void startCartMoveCb(const std_msgs::Empty::ConstPtr &msg);
+
 protected:
   ros::NodeHandle nh_;
 
@@ -61,7 +63,7 @@ protected:
   image_transport::Publisher pub_path_image_;  // Modified image showing contours
   ros::Publisher pub_rmi_;                     // rmi command list
   ros::Publisher pub_path_;                    // nav_msg Path for display
-  ros::Subscriber start_move_sub_;             // Will send the rmi command list
+  ros::Subscriber sub_start_move_;             // Will send the rmi command list
 
   image_transport::ImageTransport it_;
 
@@ -72,6 +74,8 @@ protected:
   ImageAnalyzer image_analyzer_;
   PathCreator path_creator_;
   PathExecutor path_executor_;
+
+  bool start_move_;
 
   rmi_driver::rmi_log::RmiLogger logger_;
 };

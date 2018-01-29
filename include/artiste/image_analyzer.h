@@ -30,13 +30,47 @@
 #ifndef INCLUDE_ARTISTE_IMAGE_ANALYZER_H_
 #define INCLUDE_ARTISTE_IMAGE_ANALYZER_H_
 
+#include <boost/shared_ptr.hpp>
+#include <memory>
+
+#include <cv_bridge/cv_bridge.h>
+#include <rmi_driver/rmi_logger.h>
+
 namespace artiste
 {
+using ContourVec = std::vector<std::vector<cv::Point>>;
 class ImageAnalyzer
 {
 public:
+  enum SortType
+  {
+    SortTypeSize,
+    SortTypeLeft,
+    SortTypeY,
+    SortTypeBoth
+  };
+
   ImageAnalyzer();
   virtual ~ImageAnalyzer();
+
+  cv_bridge::CvImagePtr newImageFromMsg(const sensor_msgs::ImageConstPtr &image_msg, bool color = false);
+
+  void flipImage(cv_bridge::CvImagePtr image);
+
+  ContourVec findContours(cv_bridge::CvImagePtr image);
+
+  void sortContours(ContourVec &contours, SortType type);
+
+  void
+  sortContours(ContourVec &contours,
+               std::function<bool(const std::vector<cv::Point> &left, const std::vector<cv::Point> &right)> sort_func);
+
+  ContourVec approxContours(const ContourVec &contours);
+
+  void drawContours(cv_bridge::CvImagePtr, const ContourVec &contours);
+
+protected:
+  rmi_driver::rmi_log::RmiLogger logger_;
 };
 
 } /* namespace artiste */
