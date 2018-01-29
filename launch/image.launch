@@ -1,0 +1,14 @@
+<launch>                                                                        
+  <arg name="file" default="$(find artiste)/image/ros-square-large.png" /> 
+
+  <node pkg="nodelet" type="nodelet" name="manager" args="manager"/>
+
+  <node pkg="nodelet" type="nodelet" name="image_pub"
+        args="load image_publisher/image_publisher manager">    
+    <param name="filename" value="$(arg file)"/>
+    <param name="flip_horizontal" value="false" />
+    <param name="flip_vertical" value="false" />
+  </node>
+  <param name="/manager/frame_id" value="camera_frame" />
+  <param name="/manager/publish_rate" value="1" />  
+</launch>
