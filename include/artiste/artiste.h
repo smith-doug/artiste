@@ -69,7 +69,6 @@ protected:
   tf2_ros::Buffer tf_buffer_;
 
   // Local stuff
-
   ImageAnalyzer image_analyzer_;
   PathCreator path_creator_;
   PathExecutor path_executor_;

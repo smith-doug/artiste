@@ -41,9 +41,6 @@ Artiste::Artiste(const ros::NodeHandle &nh) : nh_(nh), logger_("artiste", "/"), 
   // start_move_sub_ = nh_.subscribe("start_cart_move", 1, &FrameDrawer::startCartMoveCb, this);
 
   pub_rmi_ = nh_.advertise<robot_movement_interface::CommandList>("command_list", 1);
-
-  std::string image_topic = nh_.resolveName("/image_pub/image_raw");
-  // sub_image_ = it_.subscribe(image_topic, 1, &Artiste::imageCb, this);
 }
 
 Artiste::~Artiste()
@@ -52,9 +49,12 @@ Artiste::~Artiste()
 
 void Artiste::start()
 {
+  std::string image_topic = nh_.resolveName("/image_pub/image_raw");
+  sub_image_ = it_.subscribe(image_topic, 1, &Artiste::imageCb, this);
 }
 
 void Artiste::imageCb(const sensor_msgs::ImageConstPtr &image_msg)
 {
+  logger_.INFO() << "Image received";
 }
 } /* namespace artiste */
