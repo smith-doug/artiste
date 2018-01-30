@@ -29,11 +29,9 @@
 
 #include <artiste/path_checker.h>
 
-#include <moveit/move_group_interface/move_group_interface.h>
-
 namespace artiste
 {
-PathChecker::PathChecker() : logger_("PathChecker", "/")
+PathChecker::PathChecker() : logger_("PathChecker", "/"), perform_moves_(false)
 {
 }
 
@@ -44,10 +42,112 @@ PathChecker::~PathChecker()
 bool PathChecker::checkPath(const nav_msgs::Path &path, const std::string &manipulator)
 {
   moveit::planning_interface::MoveGroupInterface move_group(manipulator);
-  std::vector<geometry_msgs::Pose> waypoints;
 
   std::stringstream ss;
 
+  // Keep a4 from flipping for no reason.
+  moveit_msgs::Constraints path_constraints = makeConstraints();
+  move_group.setPathConstraints(path_constraints);
+
+  move_group.setMaxVelocityScalingFactor(0.5);
+  move_group.setMaxAccelerationScalingFactor(0.5);
+  auto current_pose = move_group.getCurrentPose();
+
+  moveit::planning_interface::MoveGroupInterface::Plan start_plan;
+  if (!planToStart(move_group, path, start_plan))
+    return false;
+
+  if (perform_moves_ && !moveToStart(move_group, start_plan))
+    return false;
+
+  move_group.setMaxVelocityScalingFactor(1);
+  move_group.setMaxAccelerationScalingFactor(1);
+  // move_group.clearPathConstraints();
+
+  ros::Duration(0.1).sleep();
+
+  current_pose = move_group.getCurrentPose();
+  std::vector<geometry_msgs::Pose> waypoints;
+  waypoints.push_back(current_pose.pose);
+
+  for (auto &&pt : path.poses)
+  {
+    waypoints.push_back(pt.pose);
+  }
+
+  // move_group_arm.setMaxVelocityScalingFactor(1);
+  moveit_msgs::RobotTrajectory trajectory;
+  const double jump_threshold = 0;
+  const double eef_step = 0.01;
+
+  logger_.INFO() << "Attempting to compute cartesian path with moveit";
+
+  double fraction = 0;
+  for (int i = 0; i < 4 && fraction < 0.99; i++)
+  {
+    logger_.INFO() << "Attempt #" << i << " of 4";
+    ss.str("");
+    ss << "Computenating cart path Attempt #" << i << " of 4";
+
+    fraction = move_group.computeCartesianPath(waypoints, eef_step, jump_threshold, trajectory, path_constraints);
+  }
+
+  logger_.INFO() << "Cartesian path (" << fraction * 100.0 << "%) achieved";
+
+  if (fraction > 0.99)
+  {
+    logger_.INFO() << "MoveIt computeCartesianPath checked out ok with " << trajectory.joint_trajectory.points.size()
+                   << " points";
+
+    moveit::planning_interface::MoveGroupInterface::Plan plan;
+    plan.trajectory_ = trajectory;
+    // move_group_.asyncExecute(plan);
+    // return false;
+    return true;
+  }
+  else
+  {
+    logger_.ERROR() << "Path probably had a collision";
+    return false;
+  }
+}
+
+bool PathChecker::planToStart(MoveGroup &move_group, const nav_msgs::Path &path, MovePlan &plan)
+{
+  auto start_target = path.poses.front();
+  start_target.pose.position.z += 0.01;
+
+  move_group.setPoseTarget(start_target);
+
+  if (move_group.plan(plan))
+  {
+    logger_.INFO() << "Planned move to start position OK.";
+    return true;
+  }
+  else
+  {
+    logger_.ERROR() << "Failed to move to start pos";
+    return false;
+  }
+}
+
+bool PathChecker::moveToStart(MoveGroup &move_group, MovePlan &plan)
+{
+  logger_.INFO() << "Moving to start position";
+  if (move_group.execute(plan))
+  {
+    logger_.INFO() << "Moved to start OK";
+    return true;
+  }
+  else
+  {
+    logger_.ERROR() << "Failed to move to start position";
+    return false;
+  }
+}
+
+moveit_msgs::Constraints PathChecker::makeConstraints()
+{
   // Keep a4 from flipping for no reason.
   moveit_msgs::Constraints path_constraints;
   path_constraints.name = "dont_flip";
@@ -63,93 +163,7 @@ bool PathChecker::checkPath(const nav_msgs::Path &path, const std::string &manip
   jc.joint_name = "joint_1";
 
   path_constraints.joint_constraints.push_back(jc);
-
-  move_group.setPathConstraints(path_constraints);
-
-  move_group.setMaxVelocityScalingFactor(0.5);
-  move_group.setMaxAccelerationScalingFactor(0.5);
-  auto current_pose = move_group.getCurrentPose();
-
-  geometry_msgs::Pose arrow_pose;
-  {
-    std::vector<geometry_msgs::Pose> waypoints_to_start;
-    auto start_target = path.poses.front();
-    // start_target.pose.position.z += 0.01;
-
-    arrow_pose = start_target.pose;
-    arrow_pose.position.z += 0.1;
-    // visual_tools_.publishZArrow(arrow_pose, rvt::WHITE, rvt::XSMALL, 0.1);
-    // visual_tools_.publishSphere(start_target.pose, rvt::BLUE, rvt::XSMALL);
-
-    // visual_tools_.trigger();
-
-    move_group.setPoseTarget(start_target);
-    moveit::planning_interface::MoveGroupInterface::Plan start_plan;
-    if (move_group.plan(start_plan))
-    {
-      // move_group.setPathConstraints(path_constraints);
-      move_group.move();
-    }
-    else
-    {
-      ROS_ERROR_STREAM("Failed to move to start pos");
-      return false;
-    }
-  }
-
-  move_group.setMaxVelocityScalingFactor(1);
-  move_group.setMaxAccelerationScalingFactor(1);
-  move_group.clearPathConstraints();
-
-  ros::Duration(0.1).sleep();
-
-  current_pose = move_group.getCurrentPose();
-
-  // waypoints.push_back(this->current_pose_.pose);
-  waypoints.push_back(current_pose.pose);
-
-  for (auto &&pt : path.poses)
-  {
-    waypoints.push_back(pt.pose);
-  }
-
-  // move_group_arm.setMaxVelocityScalingFactor(1);
-  moveit_msgs::RobotTrajectory trajectory;
-  const double jump_threshold = 0;
-  const double eef_step = 0.01;
-
-  auto text_pose = arrow_pose;
-  ROS_INFO_STREAM("Attempting to compute cartesian path with moveit");
-  double fraction = 0;
-  for (int i = 0; i < 4 && fraction < 0.99; i++)
-  {
-    ROS_INFO_STREAM("Attempt #" << i << " of 4");
-    ss.str("");
-    ss << "Computenating cart path Attempt #" << i << " of 4";
-
-    text_pose.position.x += 0.4;
-
-    fraction = move_group.computeCartesianPath(waypoints, eef_step, jump_threshold, trajectory, path_constraints);
-  }
-
-  ROS_INFO_NAMED("tutorial", "Visualizing plan 4 (cartesian path) (%.2f%% acheived)", fraction * 100.0);
-
-  if (fraction > 0.99)
-  {
-    ROS_INFO_STREAM("MoveIt computeCartesianPath checked out ok with " << trajectory.joint_trajectory.points.size()
-                                                                       << " points");
-
-    moveit::planning_interface::MoveGroupInterface::Plan plan;
-    plan.trajectory_ = trajectory;
-    // move_group_.asyncExecute(plan);
-    // return false;
-    return true;
-  }
-  else
-  {
-    ROS_ERROR_STREAM("Path probably had a collision");
-    return false;
-  }
+  return path_constraints;
 }
 
 } /* namespace artiste */

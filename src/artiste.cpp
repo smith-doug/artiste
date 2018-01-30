@@ -54,7 +54,8 @@ Artiste::~Artiste()
 
 void Artiste::start()
 {
-  // ros::Duration(1.5).sleep();
+  path_checker_.setPerformMoves(true);
+
   std::string image_topic = nh_.resolveName("/image_pub/image_raw");
   sub_image_ = it_.subscribe(image_topic, 1, &Artiste::imageCb, this);
   sub_start_move_ = nh_.subscribe("start_cart_move", 1, &Artiste::startCartMoveCb, this);

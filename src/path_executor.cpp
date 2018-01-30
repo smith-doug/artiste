@@ -31,7 +31,7 @@
 
 namespace artiste
 {
-PathExecutor::PathExecutor()
+PathExecutor::PathExecutor() : logger_("PathExecutor", "")
 {
   // TODO Auto-generated constructor stub
 }
@@ -49,8 +49,11 @@ robot_movement_interface::CommandList PathExecutor::createCmdList(const nav_msgs
     cmd_list.commands.emplace_back(poseToRmiCommand(pt));
   }
 
-  cmd_list.commands[0].command_type = "PTP";
+  // Use PTP for the 1st move.
+  // Not needed now, path checker will move to the start position
+  // cmd_list.commands[0].command_type = "PTP";
 
+  logger_.INFO() << "CommandList has " << cmd_list.commands.size() << " entries";
   return cmd_list;
 }
 

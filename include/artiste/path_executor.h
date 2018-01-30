@@ -34,6 +34,8 @@
 #include <nav_msgs/Path.h>
 #include <robot_movement_interface/CommandList.h>
 
+#include <rmi_driver/rmi_logger.h>
+
 namespace artiste
 {
 class PathExecutor
@@ -45,6 +47,9 @@ public:
   robot_movement_interface::CommandList createCmdList(const nav_msgs::Path &path);
 
   virtual robot_movement_interface::Command poseToRmiCommand(const geometry_msgs::PoseStamped &pt);
+
+protected:
+  rmi_driver::rmi_log::RmiLogger logger_;
 };
 
 } /* namespace artiste */

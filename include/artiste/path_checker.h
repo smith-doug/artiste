@@ -30,13 +30,18 @@
 #ifndef INCLUDE_ARTISTE_PATH_CHECKER_H_
 #define INCLUDE_ARTISTE_PATH_CHECKER_H_
 
-#include <nav_msgs/Path.h>
 #include <ros/ros.h>
+
+#include <moveit/move_group_interface/move_group_interface.h>
+#include <moveit_msgs/Constraints.h>
+#include <nav_msgs/Path.h>
 
 #include <rmi_driver/rmi_logger.h>
 
 namespace artiste
 {
+using MovePlan = moveit::planning_interface::MoveGroupInterface::Plan;
+using MoveGroup = moveit::planning_interface::MoveGroupInterface;
 class PathChecker
 {
 public:
@@ -45,6 +50,21 @@ public:
 
   bool checkPath(const nav_msgs::Path &path, const std::string &manipulator);
 
+  bool planToStart(MoveGroup &move_group, const nav_msgs::Path &path, MovePlan &plan);
+
+  bool moveToStart(MoveGroup &move_group, MovePlan &plan);
+
+  std::vector<geometry_msgs::Pose> getWaypoints(MoveGroup &move_group, const nav_msgs::Path &path);
+
+  virtual moveit_msgs::Constraints makeConstraints();
+
+  void setPerformMoves(bool perform_moves)
+  {
+    perform_moves_ = perform_moves;
+  }
+
+protected:
+  bool perform_moves_;
   rmi_driver::rmi_log::RmiLogger logger_;
 };
 
