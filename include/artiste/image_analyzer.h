@@ -39,6 +39,10 @@
 namespace artiste
 {
 using ContourVec = std::vector<std::vector<cv::Point>>;
+
+/**
+ * \brief Analyze an image for contours.
+ */
 class ImageAnalyzer
 {
 public:
@@ -53,21 +57,64 @@ public:
   ImageAnalyzer();
   virtual ~ImageAnalyzer();
 
+  /**
+   * \brief Create a CvImagePtr from a sensor message
+   *
+   * @param image_msg A sensor_msgs::Image from a camera or other publisher
+   * @param color Make a color image or not
+   * @return a new CvImagePtr
+   */
   cv_bridge::CvImagePtr newImageFromMsg(const sensor_msgs::ImageConstPtr &image_msg, bool color = false);
 
+  /**
+   * \brief Flip the image around its y axis.
+   *
+   * @param [in,out] image The CvImage created by newImageFromMsg
+   */
   void flipImage(cv_bridge::CvImagePtr image);
 
+  /**
+   * Find the contours and return them as a vector of vectors of points.
+   *
+   * @param image The cv image created by newImageFromMsg()
+   * @return
+   */
   ContourVec findContours(cv_bridge::CvImagePtr image);
 
-  void sortContours(ContourVec &contours, SortType type);
+  /**
+   * \brief Sorts the contours
+   *
+   * @param contours [in,out] Contours created by findContours()
+   * @param type
+   */
+  // virtual void sortContours(ContourVec &contours, SortType type);
 
+  /**
+   * \brief Sort the contours with a given sorting function
+   *
+   * @param contours [in,out] Contours created by findContours()
+   * @param sort_func Sort function that can be passed to std::sort.
+   */
   void
   sortContours(ContourVec &contours,
                std::function<bool(const std::vector<cv::Point> &left, const std::vector<cv::Point> &right)> sort_func);
 
-  ContourVec approxContours(const ContourVec &contours);
+  /**
+   * \brief Approximate the contours to reduce some of the complexity with approxPolyDP
+   *
+   * @param contours Contours created by findContours()
+   * @param epsilon value to use in approxPolyDP
+   * @return a new ContourVec of the approximated contours
+   */
+  ContourVec approxContours(const ContourVec &contours, double epsilon = 1.0);
 
-  void drawContours(cv_bridge::CvImagePtr, const ContourVec &contours);
+  /**
+   * \brief Draw the contours on a CvImage with pretty colors
+   *
+   * @param image a CvImage to draw on
+   * @param contours Contours created by findContours()
+   */
+  void drawContours(cv_bridge::CvImagePtr image, const ContourVec &contours);
 
 protected:
   rmi_driver::rmi_log::RmiLogger logger_;

@@ -54,7 +54,7 @@ Artiste::~Artiste()
 
 void Artiste::start()
 {
-  path_checker_.setPerformInitialMove(true);
+  path_checker_.setPerformInitialMove(true);  // Use moveit to move to the start point
 
   std::string image_topic = nh_.resolveName("/image_pub/image_raw");
   sub_image_ = it_.subscribe(image_topic, 1, &Artiste::imageCb, this);
@@ -83,13 +83,10 @@ void Artiste::imageCb(const sensor_msgs::ImageConstPtr &image_msg)
   catch (tf2::TransformException &ex)
   {
     if (first_time)
-    {
       logger_.INFO() << "Image received but failed to lookup transform.  Is it published? " << ex.what();
-    }
     else
-    {
       logger_.ERROR() << "Failed to lookup transform.  It worked before at least once. " << ex.what();
-    }
+
     return;
   }
 
@@ -107,18 +104,18 @@ void Artiste::imageCb(const sensor_msgs::ImageConstPtr &image_msg)
     {
       auto &ra = a[0];
       auto &rb = b[0];
-      // scale factor for y should be larger than img.width
-      // return ((ra.y + 1.5 * ra.x) < (rb.y + 1.5 * rb.x));
+
       return (ra.y * 10 + ra.x) < (rb.y * 10 + rb.x);
     }
   };
 
+  // Find, sort, and approximate the contours.
   auto contours = image_analyzer_.findContours(image);
   image_analyzer_.sortContours(contours, contour_sorter());
-
   auto contours_poly = image_analyzer_.approxContours(contours);
-  image_analyzer_.drawContours(image_color, contours_poly);
 
+  // Draw the approx contours on the color image, flip it, the publish for rviz
+  image_analyzer_.drawContours(image_color, contours_poly);
   image_analyzer_.flipImage(image_color);
   pub_path_image_.publish(image_color->toImageMsg());
 

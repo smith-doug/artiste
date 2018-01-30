@@ -36,12 +36,10 @@ namespace artiste
 {
 ImageAnalyzer::ImageAnalyzer() : logger_("ImageAnalyzer", "/")
 {
-  // TODO Auto-generated constructor stub
 }
 
 ImageAnalyzer::~ImageAnalyzer()
 {
-  // TODO Auto-generated destructor stub
 }
 
 CvImagePtr ImageAnalyzer::newImageFromMsg(const sensor_msgs::ImageConstPtr& image_msg, bool color)
@@ -75,7 +73,6 @@ void ImageAnalyzer::flipImage(cv_bridge::CvImagePtr image)
 ContourVec ImageAnalyzer::findContours(cv_bridge::CvImagePtr image)
 {
   ContourVec contours;
-  int max_thresh = 255;
   cv::Mat thresh;
 
   cv::threshold(image->image, thresh, 127, 255, cv::THRESH_BINARY_INV);
@@ -84,9 +81,9 @@ ContourVec ImageAnalyzer::findContours(cv_bridge::CvImagePtr image)
   return contours;
 }
 
-void ImageAnalyzer::sortContours(ContourVec& contours, SortType type)
-{
-}
+// void ImageAnalyzer::sortContours(ContourVec& contours, SortType type)
+//{
+//}
 
 void ImageAnalyzer::sortContours(
     ContourVec& contours,
@@ -95,14 +92,14 @@ void ImageAnalyzer::sortContours(
   std::sort(contours.begin(), contours.end(), sort_func);
 }
 
-ContourVec ImageAnalyzer::approxContours(const ContourVec& contours)
+ContourVec ImageAnalyzer::approxContours(const ContourVec& contours, double epsilon)
 {
   ContourVec contours_poly;
   contours_poly.resize(contours.size());
 
   for (int i = 0; i < contours.size(); i++)
   {
-    cv::approxPolyDP(contours[i], contours_poly[i], 1, true);
+    cv::approxPolyDP(contours[i], contours_poly[i], epsilon, true);
   }
 
   return contours_poly;

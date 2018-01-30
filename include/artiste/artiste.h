@@ -44,16 +44,38 @@
 
 namespace artiste
 {
+/**
+ * \brief Draw pretty picture with rmi_driver and opencv
+ *
+ */
 class Artiste
 {
 public:
+  /**
+   * \brief Create the publishers
+   *
+   * @param nh NodeHandle from main
+   */
   Artiste(const ros::NodeHandle &nh);
   virtual ~Artiste();
 
+  /**
+   * \brief Creates the subscribers
+   */
   void start();
 
+  /**
+   * \brief Perform the iamge processing, path generation and checking when an image is received.
+   *
+   * Called when an image is received on /image_pub/image_raw.  If start_move_ is set, it will perform the actual move.
+   * @param image_msg Image from a camera or image publisher
+   */
   void imageCb(const sensor_msgs::ImageConstPtr &image_msg);
 
+  /**
+   * \brief Sets the start_move_ flag.  iamgeCb will do the move on the next image.
+   * @param msg empty message
+   */
   void startCartMoveCb(const std_msgs::Empty::ConstPtr &msg);
 
 protected:
