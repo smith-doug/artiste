@@ -40,20 +40,55 @@
 namespace artiste
 {
 using ContourVec = std::vector<std::vector<cv::Point>>;
+
+/**
+ * \brief Create a nav_msgs::Path based on a ContourVec
+ */
 class PathCreator
 {
 public:
   PathCreator();
   virtual ~PathCreator();
 
+  /**
+   * \brief Set the size of the paper you are drawing on
+   *
+   * @param max_x Paper width
+   * @param max_y Paper height
+   */
   void init(double max_x, double max_y);
 
+  /**
+   * \brief Create a path from Contours created by ImageAnalyzer
+   *
+   * @param contours ContourVec created by ImageAnalyzer
+   * @param tf Transform to use to convert the local ContourVec positions
+   * @param image_height Height of the camera image
+   * @param image_width Width of the camera image
+   * @return The calculated and transformed Path
+   */
   nav_msgs::Path createPath(const ContourVec &contours, const geometry_msgs::TransformStamped &tf, double image_height,
                             double image_width);
 
+  /**
+   * \brief Convert a cv::Point into a PoseStamped.
+   *
+   * @param pt the cv::Point to convert
+   * @param frame_id Frame string to use in the Pose
+   * @param x_scale Scale pt.x by this much
+   * @param y_scale Scale pt.y by this much
+   * @return A PoseStamped where the x and y have been scaled
+   */
   geometry_msgs::PoseStamped pointToPoseScaled(const cv::Point &pt, const std::string &frame_id, double x_scale,
                                                double y_scale);
 
+  /**
+   * \brief Transform and add a Pose to the Path
+   *
+   * @param path [in,out] the Path that is being build
+   * @param tf Transform to use
+   * @param pose The pose to transform and add
+   */
   void addPose(nav_msgs::Path &path, const geometry_msgs::TransformStamped &tf, const geometry_msgs::PoseStamped &pose);
 
 protected:
