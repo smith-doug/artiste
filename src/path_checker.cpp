@@ -31,7 +31,7 @@
 
 namespace artiste
 {
-PathChecker::PathChecker() : logger_("PathChecker", "/"), perform_moves_(false)
+PathChecker::PathChecker() : logger_("PathChecker", "/"), perform_initial_moves_(false)
 {
 }
 
@@ -51,13 +51,12 @@ bool PathChecker::checkPath(const nav_msgs::Path &path, const std::string &manip
 
   move_group.setMaxVelocityScalingFactor(0.5);
   move_group.setMaxAccelerationScalingFactor(0.5);
-  auto current_pose = move_group.getCurrentPose();
 
   moveit::planning_interface::MoveGroupInterface::Plan start_plan;
   if (!planToStart(move_group, path, start_plan))
     return false;
 
-  if (perform_moves_ && !moveToStart(move_group, start_plan))
+  if (perform_initial_moves_ && !moveToStart(move_group, start_plan))
     return false;
 
   move_group.setMaxVelocityScalingFactor(1);
@@ -66,48 +65,14 @@ bool PathChecker::checkPath(const nav_msgs::Path &path, const std::string &manip
 
   ros::Duration(0.1).sleep();
 
-  current_pose = move_group.getCurrentPose();
-  std::vector<geometry_msgs::Pose> waypoints;
-  waypoints.push_back(current_pose.pose);
-
-  for (auto &&pt : path.poses)
+  if (computeCartesianPath(move_group, path, 0, &path_constraints))
   {
-    waypoints.push_back(pt.pose);
-  }
-
-  // move_group_arm.setMaxVelocityScalingFactor(1);
-  moveit_msgs::RobotTrajectory trajectory;
-  const double jump_threshold = 0;
-  const double eef_step = 0.01;
-
-  logger_.INFO() << "Attempting to compute cartesian path with moveit";
-
-  double fraction = 0;
-  for (int i = 0; i < 4 && fraction < 0.99; i++)
-  {
-    logger_.INFO() << "Attempt #" << i << " of 4";
-    ss.str("");
-    ss << "Computenating cart path Attempt #" << i << " of 4";
-
-    fraction = move_group.computeCartesianPath(waypoints, eef_step, jump_threshold, trajectory, path_constraints);
-  }
-
-  logger_.INFO() << "Cartesian path (" << fraction * 100.0 << "%) achieved";
-
-  if (fraction > 0.99)
-  {
-    logger_.INFO() << "MoveIt computeCartesianPath checked out ok with " << trajectory.joint_trajectory.points.size()
-                   << " points";
-
-    moveit::planning_interface::MoveGroupInterface::Plan plan;
-    plan.trajectory_ = trajectory;
-    // move_group_.asyncExecute(plan);
-    // return false;
+    logger_.INFO() << "Cartesian path computed successfully, all's right with the world.";
     return true;
   }
   else
   {
-    logger_.ERROR() << "Path probably had a collision";
+    logger_.ERROR() << "moveit failed to create a cartesian plan based on the provided path.  Running is not safe.";
     return false;
   }
 }
@@ -142,6 +107,57 @@ bool PathChecker::moveToStart(MoveGroup &move_group, MovePlan &plan)
   else
   {
     logger_.ERROR() << "Failed to move to start position";
+    return false;
+  }
+}
+
+bool PathChecker::computeCartesianPath(MoveGroup &move_group, const nav_msgs::Path &path, MovePlan *plan,
+                                       moveit_msgs::Constraints *constraints)
+{
+  // Change the nav_msgs::Path into a waypoint vector, starting with the current pose
+  std::vector<geometry_msgs::Pose> waypoints;
+
+  waypoints.push_back(move_group.getCurrentPose().pose);
+  for (auto &&pt : path.poses)
+  {
+    waypoints.push_back(pt.pose);
+  }
+
+  // move_group_arm.setMaxVelocityScalingFactor(1);
+  moveit_msgs::RobotTrajectory trajectory;
+  const double jump_threshold = 0;
+  const double eef_step = 0.01;
+
+  logger_.INFO() << "Attempting to compute cartesian path with moveit";
+
+  double fraction = 0;
+  for (int i = 0; i < 4 && fraction < 0.99; i++)  // Try a couple times
+  {
+    logger_.INFO() << "Attempt #" << i << " of 4";
+
+    if (constraints)
+      fraction = move_group.computeCartesianPath(waypoints, eef_step, jump_threshold, trajectory, *constraints);
+    else
+      fraction = move_group.computeCartesianPath(waypoints, eef_step, jump_threshold, trajectory);
+  }
+
+  logger_.INFO() << "Cartesian path (" << fraction * 100.0 << "%) achieved";
+
+  if (fraction > 0.99)
+  {
+    logger_.INFO() << "MoveIt computeCartesianPath checked out ok with " << trajectory.joint_trajectory.points.size()
+                   << " points";
+
+    if (plan)
+      plan->trajectory_ = trajectory;
+
+    // move_group_.asyncExecute(plan);
+    // return false;
+    return true;
+  }
+  else
+  {
+    logger_.ERROR() << "Path probably had a collision";
     return false;
   }
 }

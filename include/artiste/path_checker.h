@@ -54,6 +54,9 @@ public:
 
   bool moveToStart(MoveGroup &move_group, MovePlan &plan);
 
+  bool computeCartesianPath(MoveGroup &move_group, const nav_msgs::Path &path, MovePlan *plan = 0,
+                            moveit_msgs::Constraints *constraints = 0);
+
   std::vector<geometry_msgs::Pose> getWaypoints(MoveGroup &move_group, const nav_msgs::Path &path);
 
   virtual moveit_msgs::Constraints makeConstraints();
