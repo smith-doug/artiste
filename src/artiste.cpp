@@ -54,7 +54,7 @@ Artiste::~Artiste()
 
 void Artiste::start()
 {
-  path_checker_.setPerformMoves(true);
+  path_checker_.setPerformInitialMove(true);
 
   std::string image_topic = nh_.resolveName("/image_pub/image_raw");
   sub_image_ = it_.subscribe(image_topic, 1, &Artiste::imageCb, this);

@@ -58,13 +58,13 @@ public:
 
   virtual moveit_msgs::Constraints makeConstraints();
 
-  void setPerformMoves(bool perform_moves)
+  void setPerformInitialMove(bool perform_initial_moves)
   {
-    perform_moves_ = perform_moves;
+    perform_initial_moves_ = perform_initial_moves;
   }
 
 protected:
-  bool perform_moves_;
+  bool perform_initial_moves_;
   rmi_driver::rmi_log::RmiLogger logger_;
 };
 
