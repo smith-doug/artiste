@@ -68,7 +68,7 @@
   <depend>rmi_driver</depend>
   <depend>tf2_ros</depend>
   <depend>tf2_geometry_msgs</depend>
-  
+  <depend>moveit_ros_planning_interface</depend>  
 
 
   <!-- The export tag contains other, unspecified, tags -->

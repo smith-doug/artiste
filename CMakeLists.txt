@@ -16,6 +16,7 @@ find_package(catkin REQUIRED COMPONENTS
   tf2_ros
   tf2_geometry_msgs
   rmi_driver  
+  moveit_ros_planning_interface
 )
 
 ## System dependencies are found with CMake's conventions
@@ -110,7 +111,7 @@ find_package(Boost REQUIRED COMPONENTS system thread)
 catkin_package(
    INCLUDE_DIRS include
    LIBRARIES artiste
-   CATKIN_DEPENDS cv_bridge image_geometry image_transport roscpp tf2 tf2_ros rmi_driver 
+   CATKIN_DEPENDS cv_bridge image_geometry image_transport roscpp tf2 tf2_ros rmi_driver moveit_ros_planning_interface
 #  DEPENDS system_lib
 )
 
@@ -131,6 +132,7 @@ include_directories(
    src/path_creator.cpp
    src/path_executor.cpp
    src/image_analyzer.cpp
+   src/path_checker.cpp
  )
 
  target_link_libraries(${PROJECT_NAME}
