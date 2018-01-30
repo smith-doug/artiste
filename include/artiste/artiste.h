@@ -38,6 +38,7 @@
 #include <rmi_driver/rmi_logger.h>
 
 #include "artiste/image_analyzer.h"
+#include "artiste/path_checker.h"
 #include "artiste/path_creator.h"
 #include "artiste/path_executor.h"
 
@@ -74,6 +75,7 @@ protected:
   ImageAnalyzer image_analyzer_;
   PathCreator path_creator_;
   PathExecutor path_executor_;
+  PathChecker path_checker_;
 
   bool start_move_;
 

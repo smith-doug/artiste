@@ -54,7 +54,7 @@ Artiste::~Artiste()
 
 void Artiste::start()
 {
-  ros::Duration(1.5).sleep();
+  // ros::Duration(1.5).sleep();
   std::string image_topic = nh_.resolveName("/image_pub/image_raw");
   sub_image_ = it_.subscribe(image_topic, 1, &Artiste::imageCb, this);
   sub_start_move_ = nh_.subscribe("start_cart_move", 1, &Artiste::startCartMoveCb, this);
@@ -69,10 +69,27 @@ void Artiste::startCartMoveCb(const std_msgs::Empty::ConstPtr &msg)
 void Artiste::imageCb(const sensor_msgs::ImageConstPtr &image_msg)
 {
   static bool first_time = true;
-  if (first_time)
+
+  geometry_msgs::TransformStamped tf_camera;
+  try
   {
-    logger_.INFO() << "Image received";
+    tf_camera = tf_buffer_.lookupTransform(target_frame_, source_frame_, ros::Time(0));
+    if (first_time)
+      logger_.INFO() << "Image received and transform ok";
+
     first_time = false;
+  }
+  catch (tf2::TransformException &ex)
+  {
+    if (first_time)
+    {
+      logger_.INFO() << "Image received but failed to lookup transform.  Is it published? " << ex.what();
+    }
+    else
+    {
+      logger_.ERROR() << "Failed to lookup transform.  It worked before at least once. " << ex.what();
+    }
+    return;
   }
 
   // Create and flip the images so they are the right way up after making the paths.  I could probably just use the
@@ -104,16 +121,17 @@ void Artiste::imageCb(const sensor_msgs::ImageConstPtr &image_msg)
   image_analyzer_.flipImage(image_color);
   pub_path_image_.publish(image_color->toImageMsg());
 
-  auto tf_camera = tf_buffer_.lookupTransform(target_frame_, source_frame_, ros::Time(0));
-
   auto path = path_creator_.createPath(contours_poly, tf_camera, image_msg->height, image_msg->width);
   pub_path_.publish(path);
 
   if (start_move_)
   {
     start_move_ = false;
-    auto cmd_list = path_executor_.createCmdList(path);
-    pub_rmi_.publish(cmd_list);
+    if (path_checker_.checkPath(path, "pointer"))
+    {
+      auto cmd_list = path_executor_.createCmdList(path);
+      pub_rmi_.publish(cmd_list);
+    }
   }
 }
 } /* namespace artiste */
