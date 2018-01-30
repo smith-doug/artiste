@@ -31,6 +31,16 @@
 
 namespace artiste
 {
+template <class T>
+typename std::enable_if<!std::numeric_limits<T>::is_integer, bool>::type almost_equal(T x, T y, int ulp = 4)
+{
+  // the machine epsilon has to be scaled to the magnitude of the values used
+  // and multiplied by the desired precision in ULPs (units in the last place)
+  return std::abs(x - y) <= std::numeric_limits<T>::epsilon() * std::abs(x + y) * ulp
+         // unless the result is subnormal
+         || std::abs(x - y) < std::numeric_limits<T>::min();
+}
+
 PathChecker::PathChecker() : logger_("PathChecker", "/"), perform_initial_moves_(false)
 {
 }
@@ -131,7 +141,7 @@ bool PathChecker::computeCartesianPath(MoveGroup &move_group, const nav_msgs::Pa
   logger_.INFO() << "Attempting to compute cartesian path with moveit";
 
   double fraction = 0;
-  for (int i = 0; i < 4 && fraction < 0.99; i++)  // Try a couple times
+  for (int i = 0; i < 4 && !almost_equal(fraction, 1.00); i++)  // Try a couple times
   {
     logger_.INFO() << "Attempt #" << i << " of 4";
 
@@ -143,7 +153,7 @@ bool PathChecker::computeCartesianPath(MoveGroup &move_group, const nav_msgs::Pa
 
   logger_.INFO() << "Cartesian path (" << fraction * 100.0 << "%) achieved";
 
-  if (fraction > 0.99)
+  if (almost_equal(fraction, 1.00))
   {
     logger_.INFO() << "MoveIt computeCartesianPath checked out ok with " << trajectory.joint_trajectory.points.size()
                    << " points";
