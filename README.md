@@ -6,4 +6,6 @@ Usage:
 2. Publish an image topic   
 ```roslaunch opencv_testing image.launch file:=~/ws/src/opencv_testing/image/keba-square.png```
 3. Run the artiste node  
-```rosrun artiste artiste_node```
+```rosrun artiste artiste_node```   
+4. Publish an empty message to /start_cart_move  
+```rostopic pub -1 /start_cart_move std_msgs/Empty "{}"```
