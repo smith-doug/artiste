@@ -48,8 +48,13 @@ public:
 
   virtual robot_movement_interface::Command poseToRmiCommand(const geometry_msgs::PoseStamped &pt);
 
+  virtual std::vector<robot_movement_interface::Command>
+  finalRmiCommands(const robot_movement_interface::CommandList &cmd_list, const nav_msgs::Path &path);
+
 protected:
   rmi_driver::rmi_log::RmiLogger logger_;
+
+  int cmd_id_;
 };
 
 } /* namespace artiste */

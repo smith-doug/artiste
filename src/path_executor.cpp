@@ -31,23 +31,29 @@
 
 namespace artiste
 {
-PathExecutor::PathExecutor() : logger_("PathExecutor", "")
+PathExecutor::PathExecutor() : logger_("PathExecutor", ""), cmd_id_(0)
 {
-  // TODO Auto-generated constructor stub
 }
 
 PathExecutor::~PathExecutor()
 {
-  // TODO Auto-generated destructor stub
 }
 
 robot_movement_interface::CommandList PathExecutor::createCmdList(const nav_msgs::Path &path)
 {
+  cmd_id_ = 1;
   robot_movement_interface::CommandList cmd_list;
   for (auto &&pt : path.poses)
   {
     cmd_list.commands.emplace_back(poseToRmiCommand(pt));
   }
+
+  auto last_cmds = finalRmiCommands(cmd_list, path);
+  std::copy(last_cmds.begin(), last_cmds.end(), std::back_inserter(cmd_list.commands));
+
+  //  auto last_cmd = finalRmiCommand();
+  //  if (last_cmd)
+  //    cmd_list.commands.push_back(*last_cmd);
 
   // Use PTP for the 1st move.
   // Not needed now, path checker will move to the start position
@@ -62,6 +68,7 @@ robot_movement_interface::Command PathExecutor::poseToRmiCommand(const geometry_
   robot_movement_interface::Command cmd;
   cmd.header.frame_id = "base_link";
   cmd.command_type = "LIN";
+  cmd.command_id = cmd_id_++;
   cmd.pose_type = "QUATERNION";
   cmd.pose.push_back(pt.pose.position.x);
   cmd.pose.push_back(pt.pose.position.y);
@@ -76,6 +83,20 @@ robot_movement_interface::Command PathExecutor::poseToRmiCommand(const geometry_
   cmd.blending.push_back(1);
 
   return cmd;
+}
+
+std::vector<robot_movement_interface::Command>
+PathExecutor::finalRmiCommands(const robot_movement_interface::CommandList &cmd_list, const nav_msgs::Path &path)
+{
+  std::vector<robot_movement_interface::Command> commands;
+
+  robot_movement_interface::Command cmd_wait;
+  cmd_wait.command_type = "WAIT";
+  cmd_wait.pose_type = "IS_FINISHED";
+  cmd_wait.command_id = cmd_id_++;
+  commands.push_back(cmd_wait);
+
+  return commands;
 }
 
 } /* namespace artiste */
