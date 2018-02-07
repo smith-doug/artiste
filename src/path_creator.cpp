@@ -61,12 +61,13 @@ nav_msgs::Path PathCreator::createPath(const ContourVec &contours, const geometr
   double x_scale = max_x_ / image_width;
   double y_scale = max_y_ / image_height;
 
+  geometry_msgs::PoseStamped temp_pose;
   for (auto &&cont : contours)
   {
     auto start_point = cont.front();
     auto end_point = cont.back();
 
-    auto temp_pose = pointToPoseScaled(start_point, child_frame, x_scale, y_scale);
+    temp_pose = pointToPoseScaled(start_point, child_frame, x_scale, y_scale);
 
     auto start_pose = temp_pose;  // Save a copy to go back at end
     temp_pose.pose.position.z = 0.01;
@@ -84,6 +85,9 @@ nav_msgs::Path PathCreator::createPath(const ContourVec &contours, const geometr
     temp_pose.pose.position.z = 0.01;
     addPose(path, tf, temp_pose);
   }
+
+  temp_pose.pose.position.z += 0.1;
+  addPose(path, tf, temp_pose);
 
   return path;
 }
