@@ -4,7 +4,7 @@
   <node pkg="nodelet" type="nodelet" name="manager" args="manager"/>
 
   <node pkg="nodelet" type="nodelet" name="image_pub"
-        args="load image_publisher/image_publisher manager">    
+        args="load image_publisher/image_publisher manager" output="screen" respawn="true">    
     <param name="filename" value="$(arg file)"/>
     <param name="flip_horizontal" value="false" />
     <param name="flip_vertical" value="false" />
