@@ -69,13 +69,11 @@ bool PathChecker::checkPath(const nav_msgs::Path &path, const std::string &manip
   if (perform_initial_moves_ && !moveToStart(move_group, start_plan))
     return false;
 
-  move_group.setMaxVelocityScalingFactor(1);
-  move_group.setMaxAccelerationScalingFactor(1);
   // move_group.clearPathConstraints();
 
-  ros::Duration(0.1).sleep();
+  ros::Duration(0.5).sleep();
 
-  if (computeCartesianPath(move_group, path, 0, &path_constraints))
+  if (computeCartesianPath(move_group, path, 0))  // computeCartesianPath(move_group, path, 0, &path_constraints))
   {
     logger_.INFO() << "Cartesian path computed successfully, all's right with the world.";
     return true;
@@ -134,21 +132,32 @@ bool PathChecker::computeCartesianPath(MoveGroup &move_group, const nav_msgs::Pa
   }
 
   // move_group_arm.setMaxVelocityScalingFactor(1);
+  move_group.setMaxVelocityScalingFactor(0.1);
+  move_group.setMaxAccelerationScalingFactor(0.1);
   moveit_msgs::RobotTrajectory trajectory;
   const double jump_threshold = 0;
-  const double eef_step = 0.01;
+  const double eef_step = 0.05;
 
+  // move_group.setPlanningTime(15);
+  move_group.allowReplanning(true);
   logger_.INFO() << "Attempting to compute cartesian path with moveit";
 
   double fraction = 0;
-  for (int i = 0; i < 4 && !almost_equal(fraction, 1.00); i++)  // Try a couple times
+  moveit_msgs::MoveItErrorCodes ec;
+  for (int i = 0; !almost_equal(fraction, 1.00) && i < 5; i++)  // Try a couple times
   {
-    logger_.INFO() << "Attempt #" << i << " of 4";
+    logger_.INFO() << "Attempt #" << i + 1 << " of 5";
 
     if (constraints)
-      fraction = move_group.computeCartesianPath(waypoints, eef_step, jump_threshold, trajectory, *constraints);
+    {
+      fraction =
+          move_group.computeCartesianPath(waypoints, eef_step, jump_threshold, trajectory, *constraints, true, &ec);
+    }
     else
-      fraction = move_group.computeCartesianPath(waypoints, eef_step, jump_threshold, trajectory);
+    {
+      fraction = move_group.computeCartesianPath(waypoints, eef_step, jump_threshold, trajectory, true, &ec);
+    }
+    logger_.INFO() << (fraction * 100.0) << "% planned";
   }
 
   logger_.INFO() << "Cartesian path (" << fraction * 100.0 << "%) achieved";
@@ -167,7 +176,7 @@ bool PathChecker::computeCartesianPath(MoveGroup &move_group, const nav_msgs::Pa
   }
   else
   {
-    logger_.ERROR() << "Path probably had a collision";
+    logger_.ERROR() << "Path probably had a collision.  Ec was: " << ec.val;
     return false;
   }
 }
