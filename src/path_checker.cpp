@@ -73,6 +73,7 @@ bool PathChecker::checkPath(const nav_msgs::Path &path, const std::string &manip
 
   ros::Duration(0.5).sleep();
 
+  // move_group.setStartStateToCurrentState();
   if (computeCartesianPath(move_group, path, 0))  // computeCartesianPath(move_group, path, 0, &path_constraints))
   {
     logger_.INFO() << "Cartesian path computed successfully, all's right with the world.";
@@ -88,7 +89,7 @@ bool PathChecker::checkPath(const nav_msgs::Path &path, const std::string &manip
 bool PathChecker::planToStart(MoveGroup &move_group, const nav_msgs::Path &path, MovePlan &plan)
 {
   auto start_target = path.poses.front();
-  start_target.pose.position.z += 0.01;
+  // start_target.pose.position.z += 0.01;
 
   move_group.setPoseTarget(start_target);
 
@@ -139,7 +140,7 @@ bool PathChecker::computeCartesianPath(MoveGroup &move_group, const nav_msgs::Pa
   const double eef_step = 0.05;
 
   // move_group.setPlanningTime(15);
-  move_group.allowReplanning(true);
+  // move_group.allowReplanning(true);
   logger_.INFO() << "Attempting to compute cartesian path with moveit";
 
   double fraction = 0;
@@ -196,8 +197,13 @@ moveit_msgs::Constraints PathChecker::makeConstraints()
   path_constraints.joint_constraints.push_back(jc);
 
   jc.joint_name = "joint_1";
-
   path_constraints.joint_constraints.push_back(jc);
+
+  jc.joint_name = "joint_6";
+  jc.tolerance_above = M_PI;
+  jc.tolerance_below = M_PI;
+  path_constraints.joint_constraints.push_back(jc);
+
   return path_constraints;
 }
 
