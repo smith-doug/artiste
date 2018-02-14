@@ -78,9 +78,9 @@ robot_movement_interface::Command PathExecutor::poseToRmiCommand(const geometry_
   cmd.pose.push_back(pt.pose.orientation.y);
   cmd.pose.push_back(pt.pose.orientation.z);
 
-  cmd.velocity_type = "%";
-  cmd.velocity.push_back(100);
-  cmd.blending.push_back(1);
+  // cmd.velocity_type = "%";
+  // cmd.velocity.push_back(100);
+  // cmd.blending.push_back(1);
 
   return cmd;
 }
