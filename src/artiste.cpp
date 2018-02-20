@@ -32,6 +32,8 @@
 #include <nav_msgs/Path.h>
 #include <robot_movement_interface/CommandList.h>
 
+#include <chrono>
+
 namespace artiste
 {
 Artiste::Artiste(const ros::NodeHandle &nh) : nh_(nh), logger_("artiste", "/"), it_(nh), tf_listener_(tf_buffer_)
@@ -67,9 +69,16 @@ void Artiste::startCartMoveCb(const std_msgs::Empty::ConstPtr &msg)
   logger_.INFO() << "Starting a cart move";
 }
 
+
+
 void Artiste::imageCb(const sensor_msgs::ImageConstPtr &image_msg)
 {
   static bool first_time = true;
+
+  bool needs_update = false;
+
+  if (!last_image_)
+    needs_update = true;
 
   geometry_msgs::TransformStamped tf_camera;
   try
@@ -90,6 +99,50 @@ void Artiste::imageCb(const sensor_msgs::ImageConstPtr &image_msg)
     return;
   }
 
+  auto &camera_rot = tf_camera.transform.rotation;
+  auto &last_rot = last_tf_.transform.rotation;
+
+  auto &camera_tf = tf_camera.transform.translation;
+  auto &last_tf = last_tf_.transform.translation;
+
+  if (camera_rot.w != last_rot.w || camera_rot.x != last_rot.x || camera_rot.y != last_rot.y ||
+      camera_rot.z != last_rot.z || camera_tf.x != last_tf.x || camera_tf.y != last_tf.y || camera_tf.z != last_tf.z)
+  {
+    logger_.INFO() << "Tf was new";
+    needs_update = true;
+  }
+
+  last_tf_ = tf_camera;
+
+  if (start_move_)
+  {
+    start_move_ = false;
+    if (path_checker_.checkPath(path_, "pointer"))
+    {
+      auto cmd_list = path_executor_.createCmdList(path_);
+      pub_rmi_.publish(cmd_list);
+    }
+  }
+
+  if (!needs_update && last_image_)
+  {
+    if (image_msg->data.size() == last_image_->data.size() && image_msg->data == last_image_->data)
+    {
+      return;
+    }
+  }
+
+  last_image_ = image_msg;
+
+  path_ = CreatePath(image_msg, tf_camera);
+
+  logger_.INFO() << "New image received";
+}
+
+nav_msgs::Path Artiste::CreatePath(const sensor_msgs::ImageConstPtr &image_msg,
+                                   geometry_msgs::TransformStamped &tf_camera)
+{
+  nav_msgs::Path path;
   // Create and flip the images so they are the right way up after making the paths.  I could probably just use the
   // transform to rotate them but this works well.
   auto image = this->image_analyzer_.newImageFromMsg(image_msg, false);
@@ -119,17 +172,9 @@ void Artiste::imageCb(const sensor_msgs::ImageConstPtr &image_msg)
   image_analyzer_.flipImage(image_color);
   pub_path_image_.publish(image_color->toImageMsg());
 
-  auto path = path_creator_.createPath(contours_poly, tf_camera, image_msg->height, image_msg->width);
+  path = path_creator_.createPath(contours_poly, tf_camera, image_msg->height, image_msg->width);
   pub_path_.publish(path);
 
-  if (start_move_)
-  {
-    start_move_ = false;
-    if (path_checker_.checkPath(path, "pointer"))
-    {
-      auto cmd_list = path_executor_.createCmdList(path);
-      pub_rmi_.publish(cmd_list);
-    }
-  }
+  return path;
 }
 } /* namespace artiste */

@@ -78,6 +78,8 @@ public:
    */
   void startCartMoveCb(const std_msgs::Empty::ConstPtr &msg);
 
+  nav_msgs::Path CreatePath(const sensor_msgs::ImageConstPtr &image_msg, geometry_msgs::TransformStamped &tf_camera);
+
 protected:
   ros::NodeHandle nh_;
 
@@ -105,6 +107,11 @@ protected:
   std::string target_frame_;
 
   rmi_driver::rmi_log::RmiLogger logger_;
+
+  sensor_msgs::ImageConstPtr last_image_ = 0;
+  geometry_msgs::TransformStamped last_tf_;
+
+  nav_msgs::Path path_;
 };
 
 } /* namespace artiste */
