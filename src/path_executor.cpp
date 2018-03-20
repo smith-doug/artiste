@@ -41,7 +41,7 @@ PathExecutor::~PathExecutor()
 
 robot_movement_interface::CommandList PathExecutor::createCmdList(const nav_msgs::Path &path)
 {
-  cmd_id_ = 1;
+  cmd_id_ = 0;
   robot_movement_interface::CommandList cmd_list;
   for (auto &&pt : path.poses)
   {
