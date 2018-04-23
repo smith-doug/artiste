@@ -33,6 +33,7 @@
 #include <robot_movement_interface/CommandList.h>
 
 #include <chrono>
+#include <thread>
 
 namespace artiste
 {
@@ -42,7 +43,9 @@ Artiste::Artiste(const ros::NodeHandle &nh) : nh_(nh), logger_("artiste", "/"), 
   start_move_ = false;
   source_frame_ = "camera_frame";
   target_frame_ = "world";
-  path_creator_.init(0.18, 0.18);
+  // path_creator_.init(0.18, 0.18);
+  // path_creator_.init(0.12, 0.12);
+  path_creator_.init(0.17, 0.17);
 
   pub_path_image_ = it_.advertise("image_out", 1);
   pub_path_ = nh_.advertise<nav_msgs::Path>("/image_pub/path", 1);
@@ -68,8 +71,6 @@ void Artiste::startCartMoveCb(const std_msgs::Empty::ConstPtr &msg)
   start_move_ = true;
   logger_.INFO() << "Starting a cart move";
 }
-
-
 
 void Artiste::imageCb(const sensor_msgs::ImageConstPtr &image_msg)
 {
@@ -119,6 +120,7 @@ void Artiste::imageCb(const sensor_msgs::ImageConstPtr &image_msg)
     start_move_ = false;
     if (path_checker_.checkPath(path_, "pointer"))
     {
+      std::this_thread::sleep_for(std::chrono::milliseconds(500));
       auto cmd_list = path_executor_.createCmdList(path_);
       pub_rmi_.publish(cmd_list);
     }
@@ -158,7 +160,8 @@ nav_msgs::Path Artiste::CreatePath(const sensor_msgs::ImageConstPtr &image_msg,
       auto &ra = a[0];
       auto &rb = b[0];
 
-      return (ra.y * 10 + ra.x) < (rb.y * 10 + rb.x);
+      // return (ra.y * 10 + ra.x) < (rb.y * 10 + rb.x);
+      return (ra.x * ra.x + ra.y * ra.y) < (rb.x * rb.x + rb.y * rb.y);
     }
   };
 

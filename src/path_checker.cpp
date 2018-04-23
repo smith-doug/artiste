@@ -92,6 +92,8 @@ bool PathChecker::planToStart(MoveGroup &move_group, const nav_msgs::Path &path,
   // start_target.pose.position.z += 0.01;
 
   move_group.setPoseTarget(start_target);
+  move_group.setMaxAccelerationScalingFactor(0.02);
+  move_group.setMaxVelocityScalingFactor(0.2);
 
   if (move_group.plan(plan))
   {

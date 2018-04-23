@@ -42,6 +42,13 @@ namespace artiste
 {
 using MovePlan = moveit::planning_interface::MoveGroupInterface::Plan;
 using MoveGroup = moveit::planning_interface::MoveGroupInterface;
+
+/**
+ * \brief Checks the path using moveit's cartesian functionality.
+ *
+ * Note: It doesn't actually execute the path created by moveit computeCartesianPath.  If it manages to actually compute
+ * the path based on waypoints from PathCreator, it's safe enough.
+ */
 class PathChecker
 {
 public:

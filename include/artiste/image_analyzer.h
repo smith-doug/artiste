@@ -46,6 +46,10 @@ using ContourVec = std::vector<std::vector<cv::Point>>;
 class ImageAnalyzer
 {
 public:
+  cv::Mat background_image;
+
+  cv::Rect roi_;
+
   enum SortType
   {
     SortTypeSize,

@@ -29,6 +29,12 @@
 #include <ros/ros.h>
 
 #include <artiste/image_analyzer.h>
+#include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
+
+#include "opencv2/highgui.hpp"
+#include "opencv2/imgcodecs.hpp"
+#include "opencv2/imgproc.hpp"
 
 using namespace cv_bridge;
 
@@ -36,6 +42,8 @@ namespace artiste
 {
 ImageAnalyzer::ImageAnalyzer() : logger_("ImageAnalyzer", "/")
 {
+  background_image = cv::imread("/home/ros-industrial/rmi_ws/image.png", CV_LOAD_IMAGE_GRAYSCALE);
+  ;
 }
 
 ImageAnalyzer::~ImageAnalyzer()
@@ -50,6 +58,7 @@ CvImagePtr ImageAnalyzer::newImageFromMsg(const sensor_msgs::ImageConstPtr& imag
     if (color)
     {
       image = cv_bridge::toCvCopy(image_msg, sensor_msgs::image_encodings::BGR8);
+      // image = cv_bridge::toCvCopy(image_msg, sensor_msgs::image_encodings::TYPE_8UC1);
     }
     else
     {
@@ -74,9 +83,67 @@ ContourVec ImageAnalyzer::findContours(cv_bridge::CvImagePtr image)
 {
   ContourVec contours;
   cv::Mat thresh;
+  cv::Mat mask, bgmodel, fgmodel;
 
-  cv::threshold(image->image, thresh, 127, 255, cv::THRESH_BINARY_INV);
+  cv::Mat I;
+  // I = image->image;
+
+  cv::cvtColor(image->image, I, CV_GRAY2RGB);
+
+  if (image->image.size().width == 640 && image->image.size().height == 480)
+  {
+    roi_.x = 120;
+    roi_.y = 200;
+    roi_.width = 350;
+    roi_.height = 270;
+  }
+  else
+  {
+    roi_.x = 0;
+    roi_.y = 0;
+    roi_.width = image->image.size().width;
+    roi_.height = image->image.size().height;
+  }
+  cv::Rect roi2 = roi_;
+
+  cv::Mat region = image->image(roi2);
+
+  // cv::resize(region, region, cv::Size(640, 480), 0, 0, cv::INTER_CUBIC);
+
+  // cv::copyMakeBorder(region, region, 150, 150, 15, 15, cv::BORDER_CONSTANT, cv::Scalar::all(0));
+
+  mask.create(I.size(), CV_8UC3);
+  // mask = cv::Mat::zeros(I.size(), CV_8UC1);
+  // cv::grabCut(I, mask, roi2, bgmodel, fgmodel, 1, cv::GC_INIT_WITH_RECT);
+
+  // cv::Mat crop(image->image, cv::Rect(10, 10, image->image.size().width - 10, image->image.size().height - 10));
+
+  // cv::threshold(image->image, thresh, 127, 255, cv::THRESH_BINARY_INV);
+  // cv::threshold(crop, thresh, 127, 255, cv::THRESH_BINARY_INV);
+
+  // cv::Mat sub = /*background_image -*/ image->image;
+  cv::Mat sub = mask;
+  // cv::subtract(image->image, background_image, sub);
+
+  // cv::Canny(image->image, thresh, 100, 200, 3);
+  // cv::threshold(thresh, thresh, 127, 255, cv::THRESH_BINARY_INV);
+
+  cv::adaptiveThreshold(region, thresh, 255, cv::ADAPTIVE_THRESH_GAUSSIAN_C, cv::THRESH_BINARY_INV, 101, 20);
+  // cv::Mat test(thresh, cv::Rect(0, 0, image->image.size().width + 10, image->image.size().height + 10));
   cv::findContours(thresh, contours, cv::RetrievalModes::RETR_LIST, cv::ContourApproximationModes::CHAIN_APPROX_SIMPLE);
+
+  for (auto&& contour : contours)
+  {
+    for (auto&& point : contour)
+    {
+      point.x += roi_.x;
+      point.y += roi_.y;
+    }
+  }
+  //  std::transform(contours.begin(), contours.end(), contours.begin(), [&](std::vector<cv::Point>& contour) {
+  //    std::transform(contour.begin(), contour.end(), contour.begin(), [](cv::Point& point) { return point; });
+  //    return contour;
+  //  });
 
   return contours;
 }
@@ -114,6 +181,8 @@ void ImageAnalyzer::drawContours(cv_bridge::CvImagePtr image, const ContourVec& 
     cv::Scalar color = cv::Scalar(rng.uniform(0, 255), rng.uniform(0, 255), rng.uniform(0, 255));
     cv::drawContours(image->image, contours, i, color, 2, cv::LineTypes::LINE_AA);
   }
+
+  cv::rectangle(image->image, roi_, cv::Scalar::all(0), 2, cv::LineTypes::LINE_AA);
 }
 
 } /* namespace artiste */
