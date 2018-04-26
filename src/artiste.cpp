@@ -45,7 +45,10 @@ Artiste::Artiste(const ros::NodeHandle &nh) : nh_(nh), logger_("artiste", "/"), 
   target_frame_ = "world";
   // path_creator_.init(0.18, 0.18);
   // path_creator_.init(0.12, 0.12);
+
   path_creator_.init(0.17, 0.17);
+  // path_creator_.init(0.27, 0.27);
+  // path_creator_.init(0.1275, 0.17);
 
   pub_path_image_ = it_.advertise("image_out", 1);
   pub_path_ = nh_.advertise<nav_msgs::Path>("/image_pub/path", 1);
@@ -62,7 +65,9 @@ void Artiste::start()
   path_checker_.setPerformInitialMove(true);  // Use moveit to move to the start point
 
   std::string image_topic = nh_.resolveName("/image_pub/image_raw");
+  std::string image_topic_rect = nh_.resolveName("/image_pub/image_rect_color");
   sub_image_ = it_.subscribe(image_topic, 1, &Artiste::imageCb, this);
+  sub_image_rect_ = it_.subscribe(image_topic_rect, 1, &Artiste::imageCbRect, this);
   sub_start_move_ = nh_.subscribe("start_cart_move", 1, &Artiste::startCartMoveCb, this);
 }
 
@@ -70,6 +75,16 @@ void Artiste::startCartMoveCb(const std_msgs::Empty::ConstPtr &msg)
 {
   start_move_ = true;
   logger_.INFO() << "Starting a cart move";
+}
+
+void Artiste::imageCbRect(const sensor_msgs::ImageConstPtr &image_msg)
+{
+  static bool is_shutown = false;
+  if (!is_shutown)
+    sub_image_.shutdown();
+  is_shutown = true;
+
+  imageCb(image_msg);
 }
 
 void Artiste::imageCb(const sensor_msgs::ImageConstPtr &image_msg)
