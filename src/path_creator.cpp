@@ -61,6 +61,11 @@ nav_msgs::Path PathCreator::createPath(const ContourVec &contours, const geometr
   double x_scale = max_x_ / image_width;
   double y_scale = max_y_ / image_height;
 
+  if (x_scale > y_scale)
+    x_scale = y_scale;
+  else
+    y_scale = x_scale;
+
   geometry_msgs::PoseStamped temp_pose;
   for (auto &&cont : contours)
   {
