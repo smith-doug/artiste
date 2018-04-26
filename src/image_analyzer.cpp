@@ -88,14 +88,18 @@ ContourVec ImageAnalyzer::findContours(cv_bridge::CvImagePtr image)
   cv::Mat I;
   // I = image->image;
 
+  bool is_camera = false;
+
   cv::cvtColor(image->image, I, CV_GRAY2RGB);
 
-  if (image->image.size().width == 640 && image->image.size().height == 480)
+  if ((image->image.size().width == 640) && image->image.size().height == 480)
   {
     roi_.x = 120;
     roi_.y = 200;
-    roi_.width = 350;
+    roi_.width = 400;
     roi_.height = 270;
+
+    is_camera = true;
   }
   else
   {
@@ -108,11 +112,7 @@ ContourVec ImageAnalyzer::findContours(cv_bridge::CvImagePtr image)
 
   cv::Mat region = image->image(roi2);
 
-  // cv::resize(region, region, cv::Size(640, 480), 0, 0, cv::INTER_CUBIC);
-
-  // cv::copyMakeBorder(region, region, 150, 150, 15, 15, cv::BORDER_CONSTANT, cv::Scalar::all(0));
-
-  mask.create(I.size(), CV_8UC3);
+  // mask.create(I.size(), CV_8UC3);
   // mask = cv::Mat::zeros(I.size(), CV_8UC1);
   // cv::grabCut(I, mask, roi2, bgmodel, fgmodel, 1, cv::GC_INIT_WITH_RECT);
 
@@ -122,28 +122,31 @@ ContourVec ImageAnalyzer::findContours(cv_bridge::CvImagePtr image)
   // cv::threshold(crop, thresh, 127, 255, cv::THRESH_BINARY_INV);
 
   // cv::Mat sub = /*background_image -*/ image->image;
-  cv::Mat sub = mask;
+  // cv::Mat sub = mask;
   // cv::subtract(image->image, background_image, sub);
 
   // cv::Canny(image->image, thresh, 100, 200, 3);
   // cv::threshold(thresh, thresh, 127, 255, cv::THRESH_BINARY_INV);
 
-  cv::adaptiveThreshold(region, thresh, 255, cv::ADAPTIVE_THRESH_GAUSSIAN_C, cv::THRESH_BINARY_INV, 101, 20);
+  if (is_camera)
+    cv::adaptiveThreshold(region, thresh, 255, cv::ADAPTIVE_THRESH_GAUSSIAN_C, cv::THRESH_BINARY_INV, 101, 20);
+  else
+    cv::threshold(image->image, thresh, 127, 255, cv::THRESH_BINARY_INV);
+
   // cv::Mat test(thresh, cv::Rect(0, 0, image->image.size().width + 10, image->image.size().height + 10));
   cv::findContours(thresh, contours, cv::RetrievalModes::RETR_LIST, cv::ContourApproximationModes::CHAIN_APPROX_SIMPLE);
 
-  for (auto&& contour : contours)
+  if (is_camera)
   {
-    for (auto&& point : contour)
+    for (auto&& contour : contours)
     {
-      point.x += roi_.x;
-      point.y += roi_.y;
+      for (auto&& point : contour)
+      {
+        point.x += roi_.x;
+        point.y += roi_.y;
+      }
     }
   }
-  //  std::transform(contours.begin(), contours.end(), contours.begin(), [&](std::vector<cv::Point>& contour) {
-  //    std::transform(contour.begin(), contour.end(), contour.begin(), [](cv::Point& point) { return point; });
-  //    return contour;
-  //  });
 
   return contours;
 }
