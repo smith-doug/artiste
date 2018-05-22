@@ -68,7 +68,7 @@ public:
    * @return The calculated and transformed Path
    */
   nav_msgs::Path createPath(const ContourVec &contours, const geometry_msgs::TransformStamped &tf, double image_height,
-                            double image_width);
+                            double image_width, const cv::Rect &roi);
 
   /**
    * \brief Convert a cv::Point into a PoseStamped.
@@ -80,7 +80,7 @@ public:
    * @return A PoseStamped where the x and y have been scaled
    */
   geometry_msgs::PoseStamped pointToPoseScaled(const cv::Point &pt, const std::string &frame_id, double x_scale,
-                                               double y_scale);
+                                               double y_scale, const cv::Rect &roi);
 
   /**
    * \brief Transform and add a Pose to the Path

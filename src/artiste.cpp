@@ -187,14 +187,16 @@ nav_msgs::Path Artiste::CreatePath(const sensor_msgs::ImageConstPtr &image_msg,
   // Find, sort, and approximate the contours.
   auto contours = image_analyzer_.findContours(image);
   image_analyzer_.sortContours(contours, contour_sorter());
-  auto contours_poly = image_analyzer_.approxContours(contours);
+  auto contours_poly = image_analyzer_.approxContours(contours, 0.5);
 
   // Draw the approx contours on the color image, flip it, the publish for rviz
   image_analyzer_.drawContours(image_color, contours_poly);
   image_analyzer_.flipImage(image_color);
   pub_path_image_.publish(image_color->toImageMsg());
 
-  path = path_creator_.createPath(contours_poly, tf_camera, image_msg->height, image_msg->width);
+  auto &roi = image_analyzer_.getROI();
+
+  path = path_creator_.createPath(contours_poly, tf_camera, image_msg->height, image_msg->width, roi);
   pub_path_.publish(path);
 
   return path;

@@ -50,7 +50,7 @@ PathCreator::~PathCreator()
 }
 
 nav_msgs::Path PathCreator::createPath(const ContourVec &contours, const geometry_msgs::TransformStamped &tf,
-                                       double image_height, double image_width)
+                                       double image_height, double image_width, const cv::Rect &roi)
 {
   nav_msgs::Path path;
 
@@ -58,8 +58,9 @@ nav_msgs::Path PathCreator::createPath(const ContourVec &contours, const geometr
 
   auto child_frame = tf.child_frame_id;
 
-  double x_scale = max_x_ / image_width;
-  double y_scale = max_y_ / image_height;
+  // double x_scale = max_x_ / image_width;
+  double x_scale = max_x_ / (roi.width);
+  double y_scale = max_y_ / roi.height;
 
   if (x_scale > y_scale)
     x_scale = y_scale;
@@ -72,7 +73,7 @@ nav_msgs::Path PathCreator::createPath(const ContourVec &contours, const geometr
     auto start_point = cont.front();
     auto end_point = cont.back();
 
-    temp_pose = pointToPoseScaled(start_point, child_frame, x_scale, y_scale);
+    temp_pose = pointToPoseScaled(start_point, child_frame, x_scale, y_scale, roi);
 
     auto start_pose = temp_pose;  // Save a copy to go back at end
     temp_pose.pose.position.z = 0.01;
@@ -80,7 +81,7 @@ nav_msgs::Path PathCreator::createPath(const ContourVec &contours, const geometr
 
     for (auto &pt : cont)
     {
-      temp_pose = pointToPoseScaled(pt, child_frame, x_scale, y_scale);
+      temp_pose = pointToPoseScaled(pt, child_frame, x_scale, y_scale, roi);
       addPose(path, tf, temp_pose);
     }
 
@@ -98,12 +99,12 @@ nav_msgs::Path PathCreator::createPath(const ContourVec &contours, const geometr
 }
 
 geometry_msgs::PoseStamped PathCreator::pointToPoseScaled(const cv::Point &pt, const std::string &frame_id,
-                                                          double x_scale, double y_scale)
+                                                          double x_scale, double y_scale, const cv::Rect &roi)
 {
   geometry_msgs::PoseStamped temp_pose;
   temp_pose.header.frame_id = frame_id;
-  temp_pose.pose.position.x = pt.x * x_scale;
-  temp_pose.pose.position.y = pt.y * y_scale;
+  temp_pose.pose.position.x = (pt.x - roi.x) * x_scale;
+  temp_pose.pose.position.y = (pt.y - roi.y) * y_scale;
   temp_pose.pose.position.z = 0.0;
   temp_pose.pose.orientation.x = 0;
   temp_pose.pose.orientation.y = 1;

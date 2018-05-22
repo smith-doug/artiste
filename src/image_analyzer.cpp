@@ -202,4 +202,15 @@ void ImageAnalyzer::drawContours(cv_bridge::CvImagePtr image, const ContourVec& 
   cv::rectangle(image->image, roi_, cv::Scalar::all(0), 2, cv::LineTypes::LINE_AA);
 }
 
+void ImageAnalyzer::getROISize(double& width, double& height)
+{
+  width = roi_.width;
+  height = roi_.height;
+}
+
+const cv::Rect& ImageAnalyzer::getROI()
+{
+  return roi_;
+}
+
 } /* namespace artiste */

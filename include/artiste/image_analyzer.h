@@ -120,6 +120,10 @@ public:
    */
   void drawContours(cv_bridge::CvImagePtr image, const ContourVec &contours);
 
+  void getROISize(double &width, double &height);
+
+  const cv::Rect &getROI();
+
 protected:
   rmi_driver::rmi_log::RmiLogger logger_;
 };
