@@ -86,12 +86,13 @@ protected:
   ros::NodeHandle nh_;
 
   // Subs and pubs
-  image_transport::Subscriber sub_image_;       // Image from a camera or image publisher
-  image_transport::Subscriber sub_image_rect_;  // Image from a camera or image publisher
-  image_transport::Publisher pub_path_image_;   // Modified image showing contours
-  ros::Publisher pub_rmi_;                      // rmi command list
-  ros::Publisher pub_path_;                     // nav_msg Path for display
-  ros::Subscriber sub_start_move_;              // Will send the rmi command list
+  image_transport::Subscriber sub_image_;         // Image from a camera or image publisher
+  image_transport::Subscriber sub_image_rect_;    // Image from a camera or image publisher
+  image_transport::Subscriber sub_image_camera_;  // Image from a camera or image publisher
+  image_transport::Publisher pub_path_image_;     // Modified image showing contours
+  ros::Publisher pub_rmi_;                        // rmi command list
+  ros::Publisher pub_path_;                       // nav_msg Path for display
+  ros::Subscriber sub_start_move_;                // Will send the rmi command list
 
   image_transport::ImageTransport it_;
 

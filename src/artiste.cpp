@@ -65,8 +65,12 @@ void Artiste::start()
   path_checker_.setPerformInitialMove(true);  // Use moveit to move to the start point
 
   std::string image_topic = nh_.resolveName("/image_pub/image_raw");
-  std::string image_topic_rect = nh_.resolveName("/image_pub/image_rect_color");
   sub_image_ = it_.subscribe(image_topic, 1, &Artiste::imageCb, this);
+
+  image_topic = nh_.resolveName("/camera/color/image_rect_color");
+  sub_image_camera_ = it_.subscribe(image_topic, 1, &Artiste::imageCb, this);
+
+  std::string image_topic_rect = nh_.resolveName("/image_pub/image_rect_color");
   sub_image_rect_ = it_.subscribe(image_topic_rect, 1, &Artiste::imageCbRect, this);
   sub_start_move_ = nh_.subscribe("start_cart_move", 1, &Artiste::startCartMoveCb, this);
 }
