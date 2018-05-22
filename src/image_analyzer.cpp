@@ -92,12 +92,21 @@ ContourVec ImageAnalyzer::findContours(cv_bridge::CvImagePtr image)
 
   cv::cvtColor(image->image, I, CV_GRAY2RGB);
 
-  if ((image->image.size().width == 640) && image->image.size().height == 480)
+  if (image->image.size().width == 640 && image->image.size().height == 480)
   {
     roi_.x = 120;
     roi_.y = 200;
     roi_.width = 400;
     roi_.height = 270;
+
+    is_camera = true;
+  }
+  else if (image->image.size().width == 1920 && image->image.size().height == 1080)
+  {
+    roi_.x = 400;
+    roi_.y = 50;
+    roi_.width = 700;
+    roi_.height = image->image.size().height - 500;
 
     is_camera = true;
   }
@@ -117,32 +126,54 @@ ContourVec ImageAnalyzer::findContours(cv_bridge::CvImagePtr image)
   else
     cv::threshold(image->image, thresh, 127, 255, cv::THRESH_BINARY_INV);
 
-  cv::findContours(thresh, contours, cv::RETR_LIST, cv::CHAIN_APPROX_SIMPLE);
-
-  if (is_camera)
-  {
-    for (auto&& contour : contours)
-    {
-      for (auto&& point : contour)
-      {
-        point.x += roi_.x;
-        point.y += roi_.y;
-      }
-    }
-  }
+  cv::findContours(thresh, contours, cv::RETR_LIST, cv::CHAIN_APPROX_SIMPLE, cv::Point(roi_.x, roi_.y));
 
   return contours;
 }
 
-// void ImageAnalyzer::sortContours(ContourVec& contours, SortType type)
-//{
-//}
+double euclideanDist(cv::Point& p, cv::Point& q)
+{
+  cv::Point diff = p - q;
+  return cv::sqrt(diff.x * diff.x + diff.y * diff.y);
+}
 
 void ImageAnalyzer::sortContours(
     ContourVec& contours,
     std::function<bool(const std::vector<cv::Point>& left, const std::vector<cv::Point>& right)> sort_func)
 {
   std::sort(contours.begin(), contours.end(), sort_func);
+
+  if (contours.size() < 3 || contours.size() > 3000)
+    return;
+
+  ContourVec cvcopy = contours;
+  ContourVec sorted;
+
+  sorted.push_back(cvcopy.front());
+  cvcopy.erase(cvcopy.begin());
+
+  while (sorted.size() < contours.size() - 1)
+  {
+    auto current_point = sorted.back().front();
+    double dist_min = 99999;
+
+    auto min_pt_idx = cvcopy.begin();
+    for (auto copy_idx = cvcopy.begin(); copy_idx != cvcopy.end(); copy_idx++)
+    {
+      double dist = euclideanDist(current_point, copy_idx->front());  // cv::norm(current_point - copy_idx->front());
+      if (dist < dist_min && dist != 0)
+      {
+        dist_min = dist;
+        min_pt_idx = copy_idx;
+      }
+    }
+
+    sorted.push_back(*min_pt_idx);
+    cvcopy.erase(min_pt_idx);
+  }
+
+  sorted.push_back(cvcopy.back());
+  contours = sorted;
 }
 
 ContourVec ImageAnalyzer::approxContours(const ContourVec& contours, double epsilon)
